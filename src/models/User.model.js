@@ -11,7 +11,7 @@ const userScehema  = new mongoose.Schema({
         trim : true,
         index : true
     },
-    eamil:{
+    email:{
         type:String,
         required:true,
         unique:true,
@@ -91,4 +91,4 @@ userScehema.methods.gennerateAccessToken = function(){
     )
 }
 
-export const User = mongoose.Model("User",userScehema)
+export const User = mongoose.model("User",userScehema) 
