@@ -60,7 +60,7 @@ userScehema.pre("save",async function (next) {
     }
     
 })
-userScehema.method.isPasswordCorrect = async function  (password) {
+userScehema.methods.isPasswordCorrect = async function  (password) {
         return await bcrypt.compare(password , this.password) //Checking Whether the password is correct or not
         
     }

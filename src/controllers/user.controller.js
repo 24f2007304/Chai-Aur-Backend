@@ -8,11 +8,21 @@ const generateAccessAndRefreshTokes = async (userid) => {
     try {
 
         const user = await User.findById(userid)
+
+        if (!user) {
+            throw new ApiError(404, "User Not Found")
+        }
         const accessToken = user.gennerateAccessToken()
         const refreshToken = user.gennerateRefreshToken()
 
-        user.refreshtoken = refreshToken
-        await user.save({ validateBeforeSave: false })
+        // console.log(accessToken)
+        // console.log(refreshToken)
+
+        user.refreshToken = refreshToken
+        await User.updateOne(
+            { _id: user._id },
+            { $set: { refreshToken: refreshToken } }
+        )
         return { accessToken, refreshToken }
 
 
@@ -52,27 +62,32 @@ const registrationUser = asyncHandler(async (req, res) => {
     }
 
     const avatarlocalPath = req.files?.avatar[0]?.path;
-    // const coverImagePath =  req.files?.coverImage[0]?.path;
+    const coverImagePath = req.files?.coverImage[0]?.path;
 
     // traditional way to check the coverImage ...
-    let coverImageLocalPath;
 
-    if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
-        coverImageLocalPath = req.files.coverImage[0].path
-    }
+
+    //make the cover Image optional
+    // let coverimage ;
+    // if (coverImagePath){
+    //       coverimage = await uploadOnCloudinary(coverImagePath)
+    // }
 
     // console.log(avatarlocalPath)
     // console.log(coverImagePath)  //At this point I get all the information
+
 
     if (!avatarlocalPath) {
         throw new ApiError(400, "Avatar local file is required")
 
     }
+    const coverimage = await uploadOnCloudinary(coverImagePath)
 
     const avatar = await uploadOnCloudinary(avatarlocalPath)
-    const coverimage = await uploadOnCloudinary(coverImagePath)
-    // console.log(avatar)
-    // console.log(coverimage)
+
+
+    console.log(avatar)
+    console.log(coverimage)
     if (!avatar) {
         throw new ApiError(400, "Avater file is required")
     }
@@ -116,10 +131,11 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const { email, userName, password } = req.body
 
-    if (!userName || !email) {
+    if (!(userName || !email)) {
         throw new ApiError(400, "UserName or Email is required")
     }
     const user = await User.findOne({ $or: [{ userName }, { email }] })
+    console.log(user)
 
     if (!user) {
         throw new ApiError(404, "User Does Not Exists")
