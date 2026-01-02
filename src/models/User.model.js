@@ -79,7 +79,7 @@ userScehema.methods.gennerateAccessToken = function(){
         }
     )
 }
-userScehema.methods.gennerateAccessToken = function(){
+userScehema.methods.gennerateRefreshToken = function(){
     return jwt.sign(
         {
             _id:this._id,
