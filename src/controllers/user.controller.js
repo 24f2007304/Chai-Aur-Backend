@@ -3,6 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/User.model.js";
 import uploadOnCloudinary from "../utils/coludinary.js";
 import ApiResponse from "../utils/ApiResponse.js";
+import jwt from "jsonwebtoken";
 
 const generateAccessAndRefreshTokes = async (userid) => {
     try {
@@ -173,12 +174,16 @@ const loginUser = asyncHandler(async (req, res) => {
 
 })
 const logoutUser = asyncHandler(async (req, res) => {
-    await User.findByIdAndUpdate(req.user._id, {
-        $set: {
-            refreshToken: undefined
+    await User.findByIdAndUpdate(
+    req.user._id,
+        {
+            $unset: {
+                refreshToken: 1 // this removes the field from document
+            }
+        },
+        {
+            new: true
         }
-
-    }
     )
 
     const options = {
@@ -193,8 +198,54 @@ const logoutUser = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, {}, "User logged Out"))
 })
 
+
+const refreshAccessToken  = asyncHandler(async(req,res) =>{
+   const incomingRefreshToken =  req.cookie.refreshToken || req.body.refreshToken
+
+   if(incomingRefreshToken){
+    throw new ApiError(401 ,"unauthroized request")
+   }
+
+
+   try{
+    const decodedToken = jwt.verify(incomingRefreshToken ,process.env.REFRESH_TOKEN_SECRET)
+
+   const user = await User.findById(decodedToken?._id)
+
+   if(!user){
+    throw new ApiError(401 ,"Invalid refresh token")
+   }
+
+
+   if( incomingRefreshToken !== user.refreshToken){
+    throw new ApiError(401 ,"Refresh token is expired or used")
+   }
+
+   const options ={
+    httpOnly :true,
+    secure:true
+   }
+
+   const {newaccessToken , newrefreshToken} = await generateAccessAndRefreshTokes(user._id)
+   
+   return res
+   .status(200)
+   .cookie("accessToken" , newaccessToken , options)
+   .cookie("refreshToken" , newrefreshToken,options)
+   .json(
+    new ApiResponse(200 , {newaccessToken , newrefreshToken},
+        "Access token refreshed Successsfully"
+    )
+   )
+
+   }catch(error){
+    throw new ApiError(400 , `Error on Refreshing the Access token + ${error?.message}`)
+   }
+})
+
 export {
     registrationUser,
     loginUser,
-    logoutUser
+    logoutUser,
+    refreshAccessToken
 }
