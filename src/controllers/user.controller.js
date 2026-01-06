@@ -287,16 +287,78 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
         { new: true }
     ).select("-password") // we are not wanting to return the passowrd
 
-    return res.status(200).json( new ApiResponse(200 , user,"Account Details Update Succesfully"))
+    return res.status(200).json(new ApiResponse(200, user, "Account Details Update Succesfully"))
 
 })
 
+
+const updateUserAvatar = asyncHandler(async (req, res) => {
+    const avatarLocalPath = req.files?.path
+
+    if (!avatarLocalPath) {
+        throw new ApiError(400, "Avatar file is missing")
+    }
+
+    const avatar = await uploadOnCloudinary(avatarLocalPath)
+
+    if (!avatar.url) {
+        throw new ApiError(400, "Error while uploading on avatar")
+
+    }
+
+    // save the return from the data base in the user (without password field)
+    const user = await User.findByIdAndUpdate(req.user?._id, // finding the user by Id
+        {
+            $set: {
+                "avatar": avatar.url
+            }
+        },
+        { new: true }
+
+    ).select("-password")
+
+    return res.status(200).json(new ApiResponse(200, user
+        , "Avatar Updated Succesfully"
+    ))
+})
+
+const updateUserConverImage = asyncHandler(async (req, res) => {
+    const coverImageLocalPath = req.files?.path
+
+    if (!coverImageLocalPath) {
+        throw new ApiError(400, "Conver Image file is missing")
+    }
+
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+
+    if (!coverImage.url) {
+        throw new ApiError(400, "Error while uploading on Cover Image")
+
+    }
+
+    // save the return from the data base in the user (without password field)
+    const user = await User.findByIdAndUpdate(req.user?._id, // finding the user by Id
+        {
+            $set: {
+                "avatar": coverImage.url
+            }
+        },
+        { new: true }
+
+    ).select("-password")
+
+    return res.status(200).json(new ApiResponse(200, user
+        , "Cover Image Updated Succesfully"
+    ))
+})
 export {
     registrationUser,
     loginUser,
     logoutUser,
     refreshAccessToken,
     changeCurrentPassword,
-    getCurrentUser
+    getCurrentUser,
+    updateUserAvatar,
+    updateAccountDetails
 
 }
