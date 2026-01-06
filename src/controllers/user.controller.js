@@ -346,11 +346,77 @@ const updateUserConverImage = asyncHandler(async (req, res) => {
         { new: true }
 
     ).select("-password")
-
+    // TODO to delete the image in Cloudinary
     return res.status(200).json(new ApiResponse(200, user
         , "Cover Image Updated Succesfully"
     ))
 })
+
+
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+    const { username } = req.params
+
+
+    if (!username?.trim()) {
+        throw new ApiError(400, "UserName is Missing")
+
+    }
+
+    const channel = await User.aggregate([
+        {
+            $match: {
+                userName: username?.toLowerCase()
+            }
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "channel",
+                as: "subscribers"
+            }
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "subscriber",
+                as: "subscribersTo"
+            }
+        },
+        {
+            $addFields:{
+                subscriberscount:{
+                    $size: "$subscribers"
+                },
+                channelSubscribedTocount:{
+                    $size:"$subscribersTo"
+                },
+                isSubscribed:{
+                    $cond:{
+                        if:{$in:[req.user?._id,"$subscribers.subscriber"]},
+                        then:true,
+                        else:false
+                    }
+                }
+            }
+        },
+        {
+            $project:{
+                fullName:1,
+                userName:1,
+                subscriberscount:1,
+                channelSubscribedTocount:1,
+                isSubscribed:1,
+                avatar:1,
+                email:1,
+                coverImage:1
+            }
+        }
+    
+    ])
+})
+
 export {
     registrationUser,
     loginUser,
@@ -359,6 +425,7 @@ export {
     changeCurrentPassword,
     getCurrentUser,
     updateUserAvatar,
-    updateAccountDetails
+    updateAccountDetails,
+    getUserChannelProfile
 
 }
