@@ -54,9 +54,7 @@ const userScehema  = new mongoose.Schema({
 userScehema.pre("save",async function (next) {
     if(this.isModified("password")){ // check whether the password filed is changed or not
         this.password = await bcrypt.hash(this.password , 10)
-    }else{
         next()
-
     }
     
 })
